@@ -198,7 +198,7 @@ def zip_files_cmp(path: str, out_dst: str, pwd: str or None):
         files += path
     if pwd:
         cmd = '%s zip -P %s -r %s  %s && mv %s %s/ ' % (
-        full_path, pwd, out_dst, files, out_dst, os.getenv("WORKSPACE", "../"))
+            full_path, pwd, out_dst, files, out_dst, os.getenv("WORKSPACE", "../"))
     else:
         cmd = '%s zip -r %s %s && mv %s %s/' % (full_path, out_dst, files, out_dst, os.getenv("WORKSPACE", "../"))
     os.system(cmd)
@@ -207,43 +207,50 @@ def zip_files_cmp(path: str, out_dst: str, pwd: str or None):
 def rename_path(path: str, old_name: str, new_name: str):
     if not os.path.exists(path):
         return
-    if old_name != new_name:
-        code_path = path + 'src/main/java/com/'
-        if os.path.exists(code_path):
-            shutil.move(code_path + old_name, code_path + new_name)
-            for java in get_file_path(root_dir=code_path, suffix='.java'):
-                with open(java, 'r') as rf:
-                    lines = rf.readlines()
-                with open(java, 'w', encoding='utf-8') as wf:
-                    for line in lines:
-                        if not line:
-                            continue
-                        if "package" in line and old_name in line:
-                            line = line.replace(old_name, new_name)
-                        if 'import' in line and old_name in line:
-                            line = line.replace(old_name, new_name)
-                        if 'com.' + old_name in line:
-                            line = line.replace(old_name, new_name)
-                        wf.write(line)
-        with open(path + 'build.gradle', 'r') as rf:
-            lines = rf.readlines()
-        with open(path + 'build.gradle', 'w') as wf:
-            for line in lines:
-                if not line:
-                    continue
-                if 'applicationId' in line and old_name in line:
-                    line = line.replace(old_name, new_name)
-                wf.write(line)
-        for file in get_file_path(root_dir=path, suffix='.xml', condition="AndroidManifest"):
-            with open(file, 'r') as rf:
+    if old_name == new_name:
+        return
+    code_path = path + 'src/main/java/'
+    new_path_full = new_name.replace('.', '/')
+    new_path_last = new_path_full.split('/')[-1]
+    new_path_head = "/".join(new_path_full.split('/')[0:-1])
+    if os.path.exists(code_path):
+        shutil.move(code_path + old_name, new_path_last)
+        shutil.rmtree(code_path + "com")
+        os.makedirs(code_path + new_path_head)
+        shutil.move(new_path_last, code_path + new_path_head)
+        for java in get_file_path(root_dir=code_path, suffix='.java'):
+            with open(java, 'r') as rf:
                 lines = rf.readlines()
-            with open(file, 'w', encoding='utf-8') as wf:
+            with open(java, 'w', encoding='utf-8') as wf:
                 for line in lines:
                     if not line:
                         continue
-                    if old_name in line:
+                    if "package" in line and old_name in line:
+                        line = line.replace(old_name, new_name)
+                    if 'import' in line and old_name in line:
+                        line = line.replace(old_name, new_name)
+                    if 'com.' + old_name in line:
                         line = line.replace(old_name, new_name)
                     wf.write(line)
+    with open(path + 'build.gradle', 'r') as rf:
+        lines = rf.readlines()
+    with open(path + 'build.gradle', 'w') as wf:
+        for line in lines:
+            if not line:
+                continue
+            if 'applicationId' in line and old_name in line:
+                line = line.replace(old_name, new_name)
+            wf.write(line)
+    for file in get_file_path(root_dir=path, suffix='.xml', condition="AndroidManifest"):
+        with open(file, 'r') as rf:
+            lines = rf.readlines()
+        with open(file, 'w', encoding='utf-8') as wf:
+            for line in lines:
+                if not line:
+                    continue
+                if old_name in line:
+                    line = line.replace(old_name, new_name)
+                wf.write(line)
 
 
 def update_value_by_cond(root_path: str, match_name: str or None, suff: str, cond: str, old_val: str, new_val: str):
@@ -261,28 +268,31 @@ def update_value_by_cond(root_path: str, match_name: str or None, suff: str, con
                 wf.write(line)
 
 
-def replace_proj_res(src:str):
+def replace_proj_res(src: str):
     print("replace proj: " + src)
     res_path = 'Banana/app/src/main/res'
     test_path = 'Banana/app/src/main/assets/test'
-    if os.path.exists(src+'/res'):
+    if os.path.exists(src + '/res'):
         shutil.rmtree(res_path)
-        shutil.move(src+'/res',res_path)
-    if os.path.exists(src+'/test'):
+        shutil.move(src + '/res', res_path)
+    if os.path.exists(src + '/test'):
         os.remove(test_path)
-        shutil.copy2(src+'/test',test_path)
+        shutil.copy2(src + '/test', test_path)
+
 
 # Banana\app\src\main\java\com
+
 if __name__ == "__main__":
     #
     # init environment
-    proj = os.getenv('project','jz')
-    old_app_name_dict = {'jz':"橘子影视",'dxj':"大香蕉",'xyj':"小妖精",'zd':'遮挡'}
-    old_path_name = "xinjuzi"
+    proj = os.getenv('project', 'jz')
+    old_app_name_dict = {'jz': "橘子影视", 'dxj': "大香蕉", 'xyj': "小妖精", 'zd': '遮挡'}
+    old_path_name = "com.xinjuzi.app"
     old_version_code = "66"
     old_version_name = "v1.6.6"
     old_package_version = "34"
-    old_api_addr_dict = {'jz':"api.roumeirm.com",'dxj':"api.roumeirm.com",'xyj':'api.roumeirm.com','zd':'zhedang-api.jxkuaibu.cn'}
+    old_api_addr_dict = {'jz': "api.roumeirm.com", 'dxj': "api.roumeirm.com", 'xyj': 'api.roumeirm.com',
+                         'zd': 'zhedang-api.jxkuaibu.cn'}
     old_api_addr = old_api_addr_dict.get(proj)
     old_app_name = old_app_name_dict.get(proj)
     zip_dir = "./plugin"
@@ -290,7 +300,7 @@ if __name__ == "__main__":
     # zip_pwd = random_str()
     zip_pwd = None if len(os.getenv("zipPassword", "")) < 1 else os.getenv("zipPassword", "")
     job_name = os.getenv("JOB_BASE_NAME", "app")
-    path_name = old_path_name if len(os.getenv("pathName","")) < 1 else os.getenv("pathName")
+    path_name = old_path_name if len(os.getenv("pathName", "")) < 1 else os.getenv("pathName")
     version_code = os.getenv("versionCode", old_version_code)
     version_name = os.getenv("versionName", old_version_name)
     package_version = os.getenv("packageVersion", old_package_version)
@@ -299,7 +309,6 @@ if __name__ == "__main__":
 
     # replace file
     # replace_proj_res(src="replace_files/"+proj)
-
 
     # modify specify value by key.
     update_value_by_cond(root_path="./Banana/app/src/", match_name="strings", suff=".xml", cond="app_name",
@@ -350,10 +359,11 @@ if __name__ == "__main__":
             "cd BananaPlugin && ./gradlew build -d -q --parallel -p plugin-shadow-apk"]
     async_do_job_list(args_list=args)
 
-
     for apk in get_file_path(root_dir="./Banana/app", suffix=".apk", condition=["outputs", "release"]):
-        failed_exit(os.system('echo "Signer Apk: %s"' %(apk)),"echo failed.")
-        failed_exit(os.system('jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore test.keystore -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % apk), "Signer failed.")
+        failed_exit(os.system('echo "Signer Apk: %s"' % (apk)), "echo failed.")
+        failed_exit(os.system(
+            'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore test.keystore -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % apk),
+                    "Signer failed.")
         failed_exit(os.system('zipalign -v 1 %s %s.apk' % (apk, job_name)), "zipalign failed.")
 
     if os.path.exists(path=zip_dir):
@@ -363,7 +373,7 @@ if __name__ == "__main__":
     z.close()
 
     for apk in get_file_path(root_dir="./BananaPlugin", suffix=".apk", condition=["debug", "shadow"]):
-        failed_exit(os.system('echo "Move Apk: %s"' %(apk)),"echo failed.")
+        failed_exit(os.system('echo "Move Apk: %s"' % (apk)), "echo failed.")
         plugin_shadow_md5 = calc_file_md5(path="plugin-shadow-apk-debug.apk")
         shutil.copy2(apk, "plugin")
 
