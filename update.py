@@ -210,11 +210,12 @@ def rename_path(path: str, old_name: str, new_name: str):
     if old_name == new_name:
         return
     code_path = path + 'src/main/java/'
+    old_path_name = old_name.replace('.','/')
     new_path_full = new_name.replace('.', '/')
     new_path_last = new_path_full.split('/')[-1]
     new_path_head = "/".join(new_path_full.split('/')[0:-1])
     if os.path.exists(code_path):
-        shutil.move(code_path + old_name.replace('.','/'), new_path_last)
+        shutil.move(code_path + old_path_name, new_path_last)
         shutil.rmtree(code_path + "com")
         os.makedirs(code_path + new_path_head)
         shutil.move(new_path_last, code_path + new_path_head)
