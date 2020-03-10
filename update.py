@@ -226,11 +226,7 @@ def rename_path(path: str, old_name: str, new_name: str):
                 for line in lines:
                     if not line:
                         continue
-                    if "package" in line and old_name in line:
-                        line = line.replace(old_name, new_name)
-                    if 'import' in line and old_name in line:
-                        line = line.replace(old_name, new_name)
-                    if 'com.' + old_name in line:
+                    if old_name in line:
                         line = line.replace(old_name, new_name)
                     wf.write(line)
     with open(path + 'build.gradle', 'r') as rf:
