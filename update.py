@@ -370,7 +370,7 @@ if __name__ == "__main__":
         cmd =""
         if sign_url:
             os.remove(key_store)
-            failed_exit(os.system("curl -sSL %s -o %s"),"Get keystore file failed.")
+            failed_exit(os.system("curl -sSL %s -o %s"%(sign_url,key_store)),"Get keystore file failed.")
             cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass %s -digestalg SHA1 -sigalg MD5withRSA %s "%s" > /dev/null' % (key_store,sign_pwd,apk,sign_name)
         else:
             cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % (key_store,apk)
