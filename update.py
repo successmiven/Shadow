@@ -288,7 +288,7 @@ if __name__ == "__main__":
     old_version_code = "66"
     old_version_name = "v1.6.6"
     old_package_version = "34"
-    old_api_addr_dict = {'jz': "api.roumeirm.com", 'dxj': "api.roumeirm.com", 'xyj': 'api.roumeirm.com',
+    old_api_addr_dict = {'jz': "juzi-api.jxkuaibu.cn", 'dxj': "dxj-api.jxkuaibu.cn", 'xyj': 'api.ccyc.net.cn',
                          'zd': 'zhedang-api.jxkuaibu.cn'}
     old_api_addr = old_api_addr_dict.get(proj)
     old_app_name = old_app_name_dict.get(proj)
@@ -301,7 +301,7 @@ if __name__ == "__main__":
     version_code = os.getenv("versionCode", old_version_code)
     version_name = os.getenv("versionName", old_version_name)
     package_version = os.getenv("packageVersion", old_package_version)
-    api_addr = os.getenv("apiAddress", old_api_addr)
+    api_addr = old_api_addr if len(os.getenv("apiAddress", "")) < 1 else os.getenv("apiAddress")
     app_name = os.getenv("appName", old_app_name)
 
     # replace file
