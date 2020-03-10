@@ -293,6 +293,7 @@ if __name__ == "__main__":
     old_api_addr = old_api_addr_dict.get(proj)
     old_app_name = old_app_name_dict.get(proj)
     zip_dir = "./plugin"
+    key_store = "test.keystore"
     plugin_shadow_md5 = str()
     # zip_pwd = random_str()
     zip_pwd = None if len(os.getenv("zipPassword", "")) < 1 else os.getenv("zipPassword", "")
@@ -303,7 +304,15 @@ if __name__ == "__main__":
     package_version = os.getenv("packageVersion", old_package_version)
     api_addr = old_api_addr if len(os.getenv("apiAddress", "")) < 1 else os.getenv("apiAddress")
     app_name = os.getenv("appName", old_app_name)
-
+    sign_url = None if len(os.getenv("signUrl","")) < 1 else os.getenv("signUrl")
+    sign_pwd = None
+    sign_name = None
+    if sign_url:
+        sign_pwd = None if len(os.getenv("signPwd","")) < 1 else os.getenv("signPwd")
+        sign_name = None if len(os.getenv("signName","")) < 1 else os.getenv("signName")
+        if sign_pwd is None or sign_name is None:
+            print("Error: signPwd or signName not match.")
+            exit(1)
     # replace file
     # replace_proj_res(src="replace_files/"+proj)
 
@@ -358,8 +367,14 @@ if __name__ == "__main__":
 
     for apk in get_file_path(root_dir="./Banana/app", suffix=".apk", condition=["outputs", "release"]):
         failed_exit(os.system('echo "Signer Apk: %s"' % (apk)), "echo failed.")
-        failed_exit(os.system(
-            'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore test.keystore -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % apk),
+        cmd =""
+        if sign_url:
+            os.remove(key_store)
+            failed_exit(os.system("curl -sSL %s -o %s"),"Get keystore file failed.")
+            cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass %s -digestalg SHA1 -sigalg MD5withRSA %s "%s" > /dev/null' % (key_store,sign_pwd,apk,sign_name)
+        else:
+            cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % (key_store,apk)
+        failed_exit(os.system(cmd),
                     "Signer failed.")
         failed_exit(os.system('zipalign -v 1 %s %s.apk' % (apk, job_name)), "zipalign failed.")
 
