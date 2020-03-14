@@ -287,8 +287,9 @@ def replace_ssl_content(ssl_url:None or str,src_file:str):
     else:
         failed_exit(os.system("curl -sSL %s -o %s"%(ssl_url,ssl_file)),"Get ssl file failed.")
         failed_exit(os.system("sed -e 's/^/\"&/g' -i %s" % ssl_file),"modify ssl file failed.")
-        failed_exit(os.system("sed -e 's/$/\\\n\" +/g' -i %s"  % ssl_file),"modify ssl file failed.")
+        failed_exit(os.system("sed -e 's/$/\\\\n\" +/g' -i %s"  % ssl_file),"modify ssl file failed.")
         failed_exit(os.system("sed -e 's/END CER.*$/END CERTIFICATE-----\";/g' -i %s " % ssl_file), "modify ssl file failed.")
+        print("Success: Update SSL file.")
     with open(file=ssl_file,mode='r',encoding="utf-8") as new_ssl_fd:
         ssl_ctx = new_ssl_fd.read()
     with open(file=src_file,mode='r',encoding='utf-8') as rf:
