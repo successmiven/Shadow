@@ -31,13 +31,15 @@ def failed_exit(ret: int, note: str):
         exit(1)
 
 
-def random_str(name=False) -> str:
+def random_str(type="name") -> str:
     """
     generate random str.
     :return: str
     """
-    if name:
+    if type == "name":
         ran_str = ''.join(random.sample(first_name, 1)) + ' ' + ''.join(random.sample(last_name, 1))
+    elif type == "key":
+        ran_str = ''.join(random.sample(last_name,1)).lower() + ''.join(random.sample(last_name, 1)).lower()
     else:
         ran_str = ''.join(random.sample(["1", "2", "3", "4", "5", "6", "7", "8", "9"], 4))
     return ran_str
@@ -184,7 +186,7 @@ def update_config_hash(path: str, hash: str):
         if isinstance(plgs, list) and len(plgs) > 0:
             for plg in plgs:
                 plg['hash'] = hash
-            with open(cfg, 'w') as wf:
+            with open(cfg, 'w+') as wf:
                 json.dump(cfg_json, wf)
 
 
@@ -222,7 +224,7 @@ def rename_path(path: str, old_name: str, new_name: str):
         for java in get_file_path(root_dir=code_path, suffix='.java'):
             with open(java, 'r') as rf:
                 lines = rf.readlines()
-            with open(java, 'w', encoding='utf-8') as wf:
+            with open(java, 'w+', encoding='utf-8') as wf:
                 for line in lines:
                     if not line:
                         continue
@@ -231,7 +233,7 @@ def rename_path(path: str, old_name: str, new_name: str):
                     wf.write(line)
     with open(path + 'build.gradle', 'r') as rf:
         lines = rf.readlines()
-    with open(path + 'build.gradle', 'w') as wf:
+    with open(path + 'build.gradle', 'w+') as wf:
         for line in lines:
             if not line:
                 continue
@@ -241,7 +243,7 @@ def rename_path(path: str, old_name: str, new_name: str):
     for file in get_file_path(root_dir=path, suffix='.xml', condition="AndroidManifest"):
         with open(file, 'r') as rf:
             lines = rf.readlines()
-        with open(file, 'w', encoding='utf-8') as wf:
+        with open(file, 'w+', encoding='utf-8') as wf:
             for line in lines:
                 if not line:
                     continue
@@ -256,7 +258,7 @@ def update_value_by_cond(root_path: str, match_name: str or None, suff: str, con
     for file in get_file_path(root_dir=root_path, suffix=suff, condition=match_name):
         with open(file, 'r') as rf:
             lines = rf.readlines()
-        with open(file, 'w', encoding='utf-8') as wf:
+        with open(file, 'w+', encoding='utf-8') as wf:
             for line in lines:
                 if not line:
                     continue
@@ -277,33 +279,65 @@ def replace_proj_res(src: str):
         shutil.copy2(src + '/test', test_path)
 
 
+def replace_ssl_content(ssl_url:None or str,src_file:str):
+    ssl_file = "ssl.txt"
+    ssl_ctx = str()
+    if ssl_url is None:
+        return
+    else:
+        failed_exit(os.system("curl -sSL %s -o %s"%(ssl_url,ssl_file)),"Get ssl file failed.")
+    with open(file=ssl_file,mode='r',encoding="utf-8") as new_ssl_fd:
+        ssl_ctx = new_ssl_fd.read()
+    with open(file=src_file,mode='r',encoding='utf-8') as rf:
+        lines = rf.readlines()
+    with open(file=src_file,mode='w+',encoding='utf-8') as wf:
+        for line in lines:
+            print(line)
+            if not line:
+                continue
+            if "-----BEGIN" in line:
+                line=""
+            if '\\n" +' in line:
+                line=""
+            if '-----END' in line:
+                line=ssl_ctx
+            wf.write(line)
+
 # Banana\app\src\main\java\com
 
 if __name__ == "__main__":
     #
     # init environment
     proj = os.getenv('project', 'jz')
+
     old_app_name_dict = {'jz': "橘子影视", 'dxj': "大香蕉", 'xyj': "小妖精", 'zd': '遮挡'}
     old_path_name = "com.xinjuzi.app"
     old_version_code = "66"
     old_version_name = "v1.6.6"
     old_package_version = "34"
-    old_api_addr_dict = {'jz': "juzi-api.jxkuaibu.cn", 'dxj': "dxj-api.jxkuaibu.cn", 'xyj': 'api.ccyc.net.cn',
-                         'zd': 'zhedang-api.jxkuaibu.cn'}
+    old_api_addr_dict = {'jz': "https://juzi-api.jxkuaibu.cn/", 'dxj': "https://dxj-api.jxkuaibu.cn/", 'xyj': 'https://api.ccyc.net.cn/',
+                         'zd': 'https://zhedang-api.jxkuaibu.cn/'}
+    old_api_planb_addr_dict = {'jz': "http://juzi-api.jsykgc.com:81/", 'dxj': "http://dxj-api.jsykgc.com:81/", 'xyj': 'http://xyj-api.jsykgc.com:81/',
+                         'zd': 'http://zhedang-api.jsykgc.com:81/'}
     old_api_addr = old_api_addr_dict.get(proj)
+    old_api_planb_addr = old_api_planb_addr_dict.get(proj)
     old_app_name = old_app_name_dict.get(proj)
+    old_random_key = "random_key_for_xml_id"
+
     zip_dir = "./plugin"
     key_store = "test.keystore"
     plugin_shadow_md5 = str()
-    # zip_pwd = random_str()
+    # zip_pwd = random_str("pwd")
     zip_pwd = None if len(os.getenv("zipPassword", "")) < 1 else os.getenv("zipPassword", "")
     job_name = os.getenv("JOB_BASE_NAME", "app")
-    path_name = old_path_name if len(os.getenv("pathName", "")) < 1 else os.getenv("pathName")
-    version_code = os.getenv("versionCode", old_version_code)
-    version_name = os.getenv("versionName", old_version_name)
-    package_version = os.getenv("packageVersion", old_package_version)
-    api_addr = old_api_addr if len(os.getenv("apiAddress", "")) < 1 else os.getenv("apiAddress")
-    app_name = os.getenv("appName", old_app_name)
+    new_path_name = old_path_name if len(os.getenv("pathName", "")) < 1 else os.getenv("pathName")
+    new_version_code = os.getenv("versionCode", old_version_code)
+    new_version_name = os.getenv("versionName", old_version_name)
+    new_package_version = os.getenv("packageVersion", old_package_version)
+    new_api_addr = old_api_addr if len(os.getenv("apiAddress", "")) < 1 else os.getenv("apiAddress")
+    new_api_planb_addr = old_api_planb_addr if len(os.getenv("apiAddressPlanB","")) < 1 else os.getenv("apiAddressPlanB")
+    new_app_name = os.getenv("appName", old_app_name)
+    ssl_url = None if len(os.getenv("sslUrl","")) < 1 else os.getenv("sslUrl")
     sign_url = None if len(os.getenv("signUrl","")) < 1 else os.getenv("signUrl")
     sign_pwd = None
     sign_name = None
@@ -318,32 +352,49 @@ if __name__ == "__main__":
 
     # modify specify value by key.
     update_value_by_cond(root_path="./Banana/app/src/", match_name="strings", suff=".xml", cond="app_name",
-                         old_val=old_app_name, new_val=app_name)
+                         old_val=old_app_name, new_val=new_app_name)
+
+    update_value_by_cond(root_path="./Banana/app/src/", match_name=None, suff=".xml", cond=old_random_key,
+                         old_val=old_random_key, new_val=old_random_key+random_str("key"))
+
+    update_value_by_cond(root_path="./Banana/app/src/main/java", match_name=None, suff=".java", cond="raw_domain_bak",
+                         old_val=old_api_planb_addr, new_val=new_api_planb_addr)
+
+    for file in get_file_path(root_dir="./Banana/app/src/main/java",suffix=".java",condition="SSLContextHelper"):
+        replace_ssl_content(ssl_url=ssl_url,src_file=file)
+
+    for file in get_file_path(root_dir="./BananaPlugin/plugin/src/main/java/com",suffix='.java',condition='SSLContextHelper'):
+        replace_ssl_content(ssl_url=ssl_url,src_file=file)
 
     update_value_by_cond(root_path="./", match_name=None, suff=".java", cond="https", old_val=old_api_addr,
-                         new_val=api_addr)
+                         new_val=new_api_addr)
 
     update_value_by_cond(root_path="./", match_name=None, suff=".properties", cond="https", old_val=old_api_addr,
-                         new_val=api_addr)
+                         new_val=new_api_addr)
 
     update_value_by_cond(root_path="Banana/", match_name="build", suff=".gradle", cond="versionCode",
                          old_val=old_version_code,
-                         new_val=version_code)
+                         new_val=new_version_code)
+
     update_value_by_cond(root_path="Banana/", match_name="build", suff=".gradle", cond="versionName",
                          old_val=old_version_name,
-                         new_val=version_name)
+                         new_val=new_version_name)
+
     update_value_by_cond(root_path="Banana/app/src/", match_name="HttpUtils", suff=".java", cond="package-version",
-                         old_val=old_package_version, new_val=package_version)
-    rename_path(path="Banana/app/", old_name=old_path_name, new_name=path_name)
+                         old_val=old_package_version, new_val=new_package_version)
+
+    rename_path(path="Banana/app/", old_name=old_path_name, new_name=new_path_name)
 
     update_value_by_cond(root_path="BananaPlugin/", match_name="build", suff=".gradle", cond="versionCode",
                          old_val=old_version_code,
-                         new_val=version_code)
+                         new_val=new_version_code)
+
     update_value_by_cond(root_path="BananaPlugin/", match_name="build", suff=".gradle", cond="versionName",
                          old_val=old_version_name,
-                         new_val=version_name)
-    rename_path(path="BananaPlugin/app/", old_name=old_path_name, new_name=path_name)
-    rename_path(path="BananaPlugin/plugin-shadow-apk/", old_name=old_path_name, new_name=path_name)
+                         new_val=new_version_name)
+
+    rename_path(path="BananaPlugin/app/", old_name=old_path_name, new_name=new_path_name)
+    rename_path(path="BananaPlugin/plugin-shadow-apk/", old_name=old_path_name, new_name=new_path_name)
 
     # update exif all PNG image.
     for img_path in get_file_path(root_dir="./", suffix=".png"):
