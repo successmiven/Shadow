@@ -1,6 +1,6 @@
 # coding: utf-8
 import piexif
-from PIL import Image
+from PIL import Image,ImageDraw
 import datetime, random, os, shutil, glob, multiprocessing, zipfile, json, hashlib
 
 first_name = ["Sofia", "Julian", "Aidan", "Leah", "Harry", "Jake", "Evelyn", "Lucy", "Hayden", "Julia", "Savannah",
