@@ -147,7 +147,7 @@ def update_img(img_path: str) -> bool:
             img_out = Image.alpha_composite(img, text_layer)
             img_out.save(img_path, exif=exif_bytes)
         except BaseException:
-            print("Error: " + BaseException)
+            print(BaseException)
             return False
     else:
         return False
