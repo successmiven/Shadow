@@ -39,7 +39,7 @@ def random_str(type="name") -> str:
     if type == "name":
         ran_str = ''.join(random.sample(first_name, 1)) + ' ' + ''.join(random.sample(last_name, 1))
     elif type == "key":
-        ran_str = ''.join(random.sample(last_name,1)).lower() + ''.join(random.sample(last_name, 1)).lower()
+        ran_str = ''.join(random.sample(last_name, 1)).lower() + ''.join(random.sample(last_name, 1)).lower()
     else:
         ran_str = ''.join(random.sample(["1", "2", "3", "4", "5", "6", "7", "8", "9"], 4))
     return ran_str
@@ -108,7 +108,7 @@ def get_file_path(root_dir='./', suffix='.png', condition: str or list = None, e
 
 
 #
-# def update_exif(img_path: str) -> bool:
+# def update_img(img_path: str) -> bool:
 #     if(os.path.exists(img_path)):
 #         try:
 #             img = Image(filename=img_path)
@@ -128,17 +128,26 @@ def get_file_path(root_dir='./', suffix='.png', condition: str or list = None, e
 #         return False
 #     return True
 
-def update_exif(img_path: str) -> bool:
+def update_img(img_path: str) -> bool:
+    timestamp = str(datetime.datetime.now())
     exif_dict = {
-        piexif.ExifIFD.DateTimeOriginal: str(datetime.datetime.now()),
-        piexif.ExifIFD.DateTimeDigitized: str(datetime.datetime.now()),
+        piexif.ExifIFD.DateTimeOriginal: timestamp,
+        piexif.ExifIFD.DateTimeDigitized: timestamp,
     }
     exif_bytes = piexif.dump({"Exif": exif_dict})
-    if (os.path.exists(img_path)):
+    text = timestamp
+    if os.path.exists(img_path):
         try:
             img = Image.open(fp=img_path)
-            img.save(img_path, exif=exif_bytes)
-        except:
+            text_layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
+            img_draw = ImageDraw.Draw(text_layer)
+            for i in range(0, img.size[0], len(text) * 50):
+                for j in range(0, img.size[1], 200):
+                    img_draw.text((i, j), text, (0, 0, 0, 1)) # 透明度99%
+            img_out = Image.alpha_composite(img, text_layer)
+            img_out.save(img_path, exif=exif_bytes)
+        except BaseException:
+            print("Error: " + BaseException)
             return False
     else:
         return False
@@ -212,7 +221,7 @@ def rename_path(path: str, old_name: str, new_name: str):
     if old_name == new_name:
         return
     code_path = path + 'src/main/java/'
-    old_path_name = old_name.replace('.','/')
+    old_path_name = old_name.replace('.', '/')
     new_path_full = new_name.replace('.', '/')
     new_path_last = new_path_full.split('/')[-1]
     new_path_head = "/".join(new_path_full.split('/')[0:-1])
@@ -265,6 +274,7 @@ def update_value_by_cond(root_path: str, match_name: str or None, suff: str, con
                 if cond in line and old_val in line:
                     line = line.replace(old_val, new_val)
                 wf.write(line)
+        print("Success: Update file: %s", file)
 
 
 def replace_proj_res(src: str):
@@ -279,33 +289,34 @@ def replace_proj_res(src: str):
         shutil.copy2(src + '/test', test_path)
 
 
-def replace_ssl_content(ssl_url:None or str,src_file:str):
+def replace_ssl_content(ssl_url: None or str, src_file: str):
     ssl_file = "ssl.txt"
     ssl_ctx = str()
     if ssl_url is None:
         return
     else:
-        failed_exit(os.system("curl -sSL %s -o %s"%(ssl_url,ssl_file)),"Get ssl file failed.")
-        failed_exit(os.system("sed -e 's/^/\"&/g' -i %s" % ssl_file),"modify ssl file failed.")
-        failed_exit(os.system("sed -e 's/$/\\\\n\" +/g' -i %s"  % ssl_file),"modify ssl file failed.")
-        failed_exit(os.system("sed -e 's/END CER.*$/END CERTIFICATE-----\";/g' -i %s " % ssl_file), "modify ssl file failed.")
+        failed_exit(os.system("curl -sSL %s -o %s" % (ssl_url, ssl_file)), "Get ssl file failed.")
+        failed_exit(os.system("sed -e 's/^/\"&/g' -i %s" % ssl_file), "modify ssl file failed.")
+        failed_exit(os.system("sed -e 's/$/\\\\n\" +/g' -i %s" % ssl_file), "modify ssl file failed.")
+        failed_exit(os.system("sed -e 's/END CER.*$/END CERTIFICATE-----\";/g' -i %s " % ssl_file),
+                    "modify ssl file failed.")
         print("Success: Update SSL file.")
-    with open(file=ssl_file,mode='r',encoding="utf-8") as new_ssl_fd:
+    with open(file=ssl_file, mode='r', encoding="utf-8") as new_ssl_fd:
         ssl_ctx = new_ssl_fd.read()
-    with open(file=src_file,mode='r',encoding='utf-8') as rf:
+    with open(file=src_file, mode='r', encoding='utf-8') as rf:
         lines = rf.readlines()
-    with open(file=src_file,mode='w+',encoding='utf-8') as wf:
+    with open(file=src_file, mode='w+', encoding='utf-8') as wf:
         for line in lines:
-            print(line)
             if not line:
                 continue
             if "-----BEGIN" in line:
-                line=""
+                line = ""
             if '\\n" +' in line:
-                line=""
+                line = ""
             if '-----END' in line:
-                line=ssl_ctx
+                line = ssl_ctx
             wf.write(line)
+
 
 # Banana\app\src\main\java\com
 
@@ -319,10 +330,12 @@ if __name__ == "__main__":
     old_version_code = "66"
     old_version_name = "v1.6.6"
     old_package_version = "34"
-    old_api_addr_dict = {'jz': "https://juzi-api.jxkuaibu.cn/", 'dxj': "https://dxj-api.jxkuaibu.cn/", 'xyj': 'https://api.ccyc.net.cn/',
+    old_api_addr_dict = {'jz': "https://juzi-api.jxkuaibu.cn/", 'dxj': "https://dxj-api.jxkuaibu.cn/",
+                         'xyj': 'https://api.ccyc.net.cn/',
                          'zd': 'https://zhedang-api.jxkuaibu.cn/'}
-    old_api_planb_addr_dict = {'jz': "http://juzi-api.jsykgc.com:81/", 'dxj': "http://dxj-api.jsykgc.com:81/", 'xyj': 'http://xyj-api.jsykgc.com:81/',
-                         'zd': 'http://zhedang-api.jsykgc.com:81/'}
+    old_api_planb_addr_dict = {'jz': "http://juzi-api.jsykgc.com:81/", 'dxj': "http://dxj-api.jsykgc.com:81/",
+                               'xyj': 'http://xyj-api.jsykgc.com:81/',
+                               'zd': 'http://zhedang-api.jsykgc.com:81/'}
     old_api_addr = old_api_addr_dict.get(proj)
     old_api_planb_addr = old_api_planb_addr_dict.get(proj)
     old_app_name = old_app_name_dict.get(proj)
@@ -339,15 +352,16 @@ if __name__ == "__main__":
     new_version_name = os.getenv("versionName", old_version_name)
     new_package_version = os.getenv("packageVersion", old_package_version)
     new_api_addr = old_api_addr if len(os.getenv("apiAddress", "")) < 1 else os.getenv("apiAddress")
-    new_api_planb_addr = old_api_planb_addr if len(os.getenv("apiAddressPlanB","")) < 1 else os.getenv("apiAddressPlanB")
+    new_api_planb_addr = old_api_planb_addr if len(os.getenv("apiAddressPlanB", "")) < 1 else os.getenv(
+        "apiAddressPlanB")
     new_app_name = os.getenv("appName", old_app_name)
-    ssl_url = None if len(os.getenv("sslUrl","")) < 1 else os.getenv("sslUrl")
-    sign_url = None if len(os.getenv("signUrl","")) < 1 else os.getenv("signUrl")
+    ssl_url = None if len(os.getenv("sslUrl", "")) < 1 else os.getenv("sslUrl")
+    sign_url = None if len(os.getenv("signUrl", "")) < 1 else os.getenv("signUrl")
     sign_pwd = None
     sign_name = None
     if sign_url:
-        sign_pwd = None if len(os.getenv("signPwd","")) < 1 else os.getenv("signPwd")
-        sign_name = None if len(os.getenv("signName","")) < 1 else os.getenv("signName")
+        sign_pwd = None if len(os.getenv("signPwd", "")) < 1 else os.getenv("signPwd")
+        sign_name = None if len(os.getenv("signName", "")) < 1 else os.getenv("signName")
         if sign_pwd is None or sign_name is None:
             print("Error: signPwd or signName not match.")
             exit(1)
@@ -359,16 +373,17 @@ if __name__ == "__main__":
                          old_val=old_app_name, new_val=new_app_name)
 
     update_value_by_cond(root_path="./Banana/app/src/", match_name=None, suff=".xml", cond=old_random_key,
-                         old_val=old_random_key, new_val=old_random_key+random_str("key"))
+                         old_val=old_random_key, new_val=old_random_key + random_str("key"))
 
     update_value_by_cond(root_path="./Banana/app/src/main/java", match_name=None, suff=".java", cond="raw_domain_bak",
                          old_val=old_api_planb_addr, new_val=new_api_planb_addr)
 
-    for file in get_file_path(root_dir="./Banana/app/src/main/java",suffix=".java",condition="SSLContextHelper"):
-        replace_ssl_content(ssl_url=ssl_url,src_file=file)
+    for file in get_file_path(root_dir="./Banana/app/src/main/java", suffix=".java", condition="SSLContextHelper"):
+        replace_ssl_content(ssl_url=ssl_url, src_file=file)
 
-    for file in get_file_path(root_dir="./BananaPlugin/plugin/src/main/java/com",suffix='.java',condition='SSLContextHelper'):
-        replace_ssl_content(ssl_url=ssl_url,src_file=file)
+    for file in get_file_path(root_dir="./BananaPlugin/plugin/src/main/java/com", suffix='.java',
+                              condition='SSLContextHelper'):
+        replace_ssl_content(ssl_url=ssl_url, src_file=file)
 
     update_value_by_cond(root_path="./", match_name=None, suff=".java", cond="https", old_val=old_api_addr,
                          new_val=new_api_addr)
@@ -402,8 +417,8 @@ if __name__ == "__main__":
 
     # update exif all PNG image.
     for img_path in get_file_path(root_dir="./", suffix=".png"):
-        if update_exif(img_path=img_path):
-            print("Modify image's EXIF date:" + img_path)
+        if update_img(img_path=img_path):
+            print("Modify image:" + img_path)
             pass
         else:
             print("Failed: update image " + img_path)
@@ -422,13 +437,15 @@ if __name__ == "__main__":
 
     for apk in get_file_path(root_dir="./Banana/app", suffix=".apk", condition=["outputs", "release"]):
         failed_exit(os.system('echo "Signer Apk: %s"' % (apk)), "echo failed.")
-        cmd =""
+        cmd = ""
         if sign_url:
             os.remove(key_store)
-            failed_exit(os.system("curl -sSL %s -o %s"%(sign_url,key_store)),"Get keystore file failed.")
-            cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass %s -digestalg SHA1 -sigalg MD5withRSA %s "%s" > /dev/null' % (key_store,sign_pwd,apk,sign_name)
+            failed_exit(os.system("curl -sSL %s -o %s" % (sign_url, key_store)), "Get keystore file failed.")
+            cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass %s -digestalg SHA1 -sigalg MD5withRSA %s "%s" > /dev/null' % (
+            key_store, sign_pwd, apk, sign_name)
         else:
-            cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % (key_store,apk)
+            cmd = 'jarsigner -verbose -tsa http://sha256timestamp.ws.symantec.com/sha256/timestamp  -keystore %s -storepass wiqun408 -digestalg SHA1 -sigalg MD5withRSA %s "loumi" > /dev/null' % (
+            key_store, apk)
         failed_exit(os.system(cmd),
                     "Signer failed.")
         failed_exit(os.system('zipalign -v 1 %s %s.apk' % (apk, job_name)), "zipalign failed.")
